@@ -1,13 +1,11 @@
-name: "Build and Scan Docker Image"
+name: Build, Scan & Deploy Docker Image
 
 on:
   push:
-    branches: [ main ]   # Trigger on push to main
-  pull_request:
-    branches: [ main ]   # Optional: Trigger on PR to main
+    branches: [ main ]
 
 jobs:
-  build-and-scan:
+  build-scan-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,25 +15,37 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry (GHCR)
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GH_TOKEN }}
 
-      - name: Build Docker image
+      - name: Build and Push Docker Image
         run: |
           docker build -t ghcr.io/${{ github.repository }}:latest .
+          docker push ghcr.io/${{ github.repository }}:latest
 
-      - name: Run Trivy vulnerability scanner
+      - name: Run Trivy Scan
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'ghcr.io/${{ github.repository }}:latest'
           format: 'table'
-          exit-code: '0'                              # ✅ Do not fail pipeline on vulnerabilities
-          severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
-          vuln-type: 'os,library'                    # ✅ Scan OS and library packages
-          ignore-unfixed: false                      # ✅ Show unfixed vulnerabilities too
-          skip-db-update: false                      # ✅ Force DB update before scan
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+          vuln-type: 'os,library'
+
+      - name: Deploy on Server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GH_TOKEN }}
+            docker pull ghcr.io/${{ github.repository }}:latest
+            docker stop myapp || true
+            docker rm myapp || true
+            docker run -d --name myapp -p 80:3000 ghcr.io/${{ github.repository }}:latest
 
