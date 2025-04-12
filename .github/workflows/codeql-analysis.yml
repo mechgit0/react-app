@@ -1,4 +1,4 @@
-name: Build, Scan & Deploy Docker Image
+name: Build, Scan & Deploy to Minikube
 
 on:
   push:
@@ -36,7 +36,16 @@ jobs:
           severity: 'CRITICAL,HIGH'
           vuln-type: 'os,library'
 
-      - name: Deploy on Server
+      - name: Copy Kubernetes Manifests to Server
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "k8s/*"
+          target: "/home/ubuntu/k8s"
+
+      - name: Deploy to Minikube on Server
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_IP }}
@@ -44,8 +53,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GH_TOKEN }}
-            docker pull ghcr.io/${{ github.repository }}:latest
-            docker stop myapp || true
-            docker rm myapp || true
-            docker run -d --name myapp -p 3000:3000 ghcr.io/${{ github.repository }}:latest
+            sed -i "s|IMAGE_PLACEHOLDER|ghcr.io/${{ github.repository }}:latest|g" /home/ubuntu/k8s/deployment.yaml
+            kubectl apply -f /home/ubuntu/k8s/
 
