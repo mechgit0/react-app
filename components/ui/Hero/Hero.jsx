@@ -20,7 +20,7 @@ const Hero = () => (
                                 backgroundImage: "linear-gradient(179.1deg, #FFFFFF 0.77%, rgba(255, 255, 255, 0) 182.09%)"
                             }}
                         >
-                            randikhana
+                            deploy on minikube by ashish
                         </h1>
                         <p className="max-w-xl mx-auto text-gray-300">
                             Gain control of your business's growth with Mailgo's comprehensive marketing, automation, and email marketing platform.
