@@ -75,7 +75,7 @@ jobs:
             # Port forward the service to localhost:3000 (run in background)
             nohup kubectl port-forward svc/myapp-service 3000:3000 > /dev/null 2>&1 &
 
-            # Print logs of the first pod for debugging
+            # jwPrint logs of the first pod for debugging
             POD_NAME=$(kubectl get pods -l app=myapp -o jsonpath="{.items[0].metadata.name}")
             kubectl logs $POD_NAME
 
