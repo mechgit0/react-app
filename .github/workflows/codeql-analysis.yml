@@ -36,14 +36,23 @@ jobs:
           severity: 'CRITICAL,HIGH'
           vuln-type: 'os,library'
 
+      - name: Clean old Kubernetes Manifests on Server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            rm -rf /home/ubuntu/k8s
+
       - name: Copy Kubernetes Manifests to Server
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "k8s/*"
-          target: "/home/ubuntu/k8s"
+          source: "k8s"
+          target: "/home/ubuntu"
 
       - name: Deploy to Minikube on Server
         uses: appleboy/ssh-action@v1.0.0
