@@ -78,7 +78,7 @@ jobs:
             kubectl rollout status deployment/myapp || exit 1
 
             # Port forward to host (background)
-            #nohup kubectl port-forward svc/myapp-service 3000:3000 > /dev/null 2>&1 &
+            nohup kubectl port-forward svc/myapp-service 3000:3000 > /dev/null 2>&1 &
 
             # Output pod logs for debugging
             POD_NAME=$(kubectl get pods -l app=myapp -o jsonpath="{.items[0].metadata.name}")

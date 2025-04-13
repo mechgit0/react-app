@@ -17,7 +17,6 @@ spec:
           image: ghcr.io/mechgit0/react-app:latest
           ports:
             - containerPort: 3000
-              hostPort: 3000
       imagePullSecrets:
         - name: ghcr-secret
 
