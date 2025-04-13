@@ -44,6 +44,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             rm -rf /home/ubuntu/k8s
+            docker image prune -af
 
       - name: Copy Kubernetes Manifests to Server
         uses: appleboy/scp-action@v0.1.4
@@ -61,21 +62,26 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GH_TOKEN }}
+            docker login ghcr.io -u ${{ github.actor }} --password-stdin <<< "${{ secrets.GH_TOKEN }}"
 
-            # Update deployment.yaml with the pushed image
+            # Delete all old deployments and pods
+            kubectl delete deployment myapp || true
+            kubectl delete pod -l app=myapp || true
+
+            # Replace placeholder with actual image
             sed -i "s|IMAGE_PLACEHOLDER|ghcr.io/${{ github.repository }}:latest|g" /home/ubuntu/k8s/deployment.yaml
 
-            # Apply the manifests
+            # Apply updated manifests
             kubectl apply -f /home/ubuntu/k8s/
 
-            # Wait for rollout
-            kubectl rollout status deployment/myapp
+            # Wait for rollout to finish (will timeout if it fails)
+            kubectl rollout status deployment/myapp || exit 1
 
-            # Port forward the service to localhost:3000 (run in background)
+            # Port forward to host (background)
             nohup kubectl port-forward svc/myapp-service 3000:3000 > /dev/null 2>&1 &
 
-            # jwPrint logs of the first pod for debugging
+            # Output pod logs for debugging
             POD_NAME=$(kubectl get pods -l app=myapp -o jsonpath="{.items[0].metadata.name}")
-            kubectl logs $POD_NAME
+            echo "==== Logs for pod: $POD_NAME ===="
+            kubectl logs $POD_NAME || true
 
