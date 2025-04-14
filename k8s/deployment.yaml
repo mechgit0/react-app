@@ -12,6 +12,7 @@ spec:
       labels:
         app: myapp
     spec:
+      hostNetwork: true  # Critical change
       containers:
         - name: myapp
           image: ghcr.io/mechgit0/react-app:latest
